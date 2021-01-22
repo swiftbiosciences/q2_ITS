@@ -11,7 +11,9 @@ Setup:
    and "q2wkflow_ITS_v3.sh" in the same file folder.
 
 2. Edit “config.txt” to enter correct absolute paths to each tool, primer 
-   file, and expected read length after primer is trimmed.
+   file, and expected read length after primer is trimmed. Set "AS_PE" to 'true'
+   if you wish to merge the paired end reads, i.e. R1 and R2, and process the 
+   merged reads (recommended for longer read lengths, e.g. 2X250, 2X300).
 
    Command to run:
    q2wkflow_ITS_v3.sh config.txt inputdir workdir
