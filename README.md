@@ -39,4 +39,3 @@ Additional notes:
    with UNITE ITS reference set version 8 included in the package, for ITS
    analysis). Users should feel free to obtain and test  other type  of
    classifiers & reference sets that best fit the environments sampled.
-# q2_ITS
