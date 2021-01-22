@@ -6,13 +6,12 @@ Qiime 2 (https://qiime2.org/)
 Setup:
 1. Unzip the package file to get following files: q2wkflow_ITS_v3.sh,  
    mergeStrand_taxonomy.py, config.txt, primer file, and reference 
-   file (1) for the 'sklearn' classifier using UNITE ITS reference 
+   file (1) for the naive baysian classifier using UNITE ITS reference 
    version 8. Please make sure to place file "mergeStrand_taxonomy.py" 
    and "q2wkflow_ITS_v3.sh" in the same file folder.
 
 2. Edit “config.txt” to enter correct absolute paths to each tool, primer 
-   file, expected read length after primer is trimmed, and clustering 
-   similarity cutoff.
+   file, and expected read length after primer is trimmed.
 
    Command to run:
    q2wkflow_ITS_v3.sh config.txt inputdir workdir
