@@ -4,7 +4,7 @@
 ## Remember to edit/set the parameters in config.txt file
 ## Run as q2wkflow_ITS.sh config.txt inputDir outputDir
 ## make sure output dir exists before running the pipeline
-## This workflow treats paired-end reads as single reads.
+## This workflow treats paired-end as single reads or as paired-end reads.
 
 
 set -e
