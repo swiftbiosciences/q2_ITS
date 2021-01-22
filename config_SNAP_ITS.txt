@@ -1,0 +1,8 @@
+#!/usr/bash 
+CUTADAPT=/home/qiime/miniconda2/envs/qiime2-2019.4/bin/cutadapt
+VSEARCH=/home/qiime/miniconda2/envs/qiime2-2019.4/bin/vsearch
+
+PRIMERS=/seq/qiime/scripts/q2_ITS_v3/primers_SNAP_ITS.fasta
+READLEN=120 #read length its primer is removed (before paired end merging)
+CLASSIFIER=/seq/qiime/scripts/q2_ITS_v3/unite_ver8_dynamic_02.02.2019_dev_phylum_2020_11.qza
+
