@@ -4,11 +4,11 @@ Software package requirements:
 Qiime 2 (https://qiime2.org/)
 
 Setup:
-1. Unzip the package file to get following files: q2wkflow_ITS_v3.sh,  
+1. Clone the package using "git clone https://github.com/swiftbiosciences/q2_ITS.git" 
+   to get following files: q2wkflow_ITS_v3.sh,  
    mergeStrand_taxonomy.py, config.txt, primer file, and reference 
    file (1) for the naive baysian classifier using UNITE ITS reference 
-   version 8. Please make sure to place file "mergeStrand_taxonomy.py" 
-   and "q2wkflow_ITS_v3.sh" in the same file folder.
+   version 8. 
 
 2. Edit “config.txt” to enter correct absolute paths to each tool, primer 
    file, and expected read length after primer is trimmed. Set "AS_PE" to 'true'
