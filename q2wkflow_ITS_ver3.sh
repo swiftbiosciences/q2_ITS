@@ -37,8 +37,14 @@ echo "Primer file used: "$PRIMERS >> $log
 
 ## initiate the manifest file for importing to qiime2 upon completion of primer trimming the PE merging.
 manifest=manifest.tsv
-#printf "sample-id,absolute-filepath,direction\n" > $manifest
-printf "sample-id\tabsolute-filepath\n" > $manifest
+
+#Treat reads as Paired end or single
+if $AS_PE; then
+      printf "sample-id,absolute-filepath,direction\n" > $manifest
+   else
+      printf "sample-id\tabsolute-filepath\n" > $manifest
+   fi
+
 samplemeta=sampleMetadata.tsv #this is a sample metadata file, now is created to contain only sample IDs.  user should prepare sample metadata file in tsv format
 printf "#SampleID\n" > $samplemeta
 
@@ -52,8 +58,8 @@ for R1 in ${inputDir}/*_R1*.fastq.gz; do #the input directory
     basenameR2=${R2##*/}
     prefixR1=${basenameR1%".fastq.gz"}
     prefixR2=${basenameR2%".fastq.gz"}
-    trimmedR1=Fastq/${prefixR1}"_primerTrimmed.fastq"
-    trimmedR2=Fastq/${prefixR2}"_primerTrimmed.fastq"
+    trimmedR1=${WD}/Fastq/${prefixR1}"_trimmed.fastq"
+    trimmedR2=${WD}/Fastq/${prefixR2}"_trimmed.fastq"
     untrimmedR1=Fastq/${prefixR1}"_primerNotFound.fastq" #won't go to downstream analysis
     untrimmedR2=Fastq/${prefixR2}"_primerNotFound.fastq" #won't go to downstream analysis
     prefix=${prefixR1%_L001_R1_*} #the sample name prefix of R1 and R2
@@ -72,46 +78,67 @@ for R1 in ${inputDir}/*_R1*.fastq.gz; do #the input directory
               >& log.${prefix}.cutadapt.txt
 
     #Prepare the manifest file for importing to QIIME2#
-    trimmed=Qobj/${prefix}_swift_trimmed.fastq
-    
-    #Combine the trimmed R1 and R2 into a single file to be processed as single reads
-    cat ${trimmedR1} ${trimmedR2} > ${trimmed}
-    printf "${prefix}\t${trimmed}\n" >> $manifest
+    if $AS_PE; then
+            printf "${prefix},${trimmedR1},forward\n" >> $manifest
+            printf "${prefix},${trimmedR2},reverse\n" >> $manifest
+        else   	
+    	    #Combine the trimmed R1 and R2 into a single file to be processed as single reads
+    	    trimmed=${WD}/Qobj/${prefix}_trimmed.fastq
+            cat ${trimmedR1} ${trimmedR2} > ${trimmed}
+            printf "${prefix}\t${trimmed}\n" >> $manifest
+       fi
     printf "${prefix}\n" >> $samplemeta
 
 done
 	
 ### Import fastq files containing PE merged and not merged read as single read file to QIIME2 ####
      #for importing paired-end merged or combined 
-     qiime tools import \
+     if $AS_PE; then
+     	     qiime tools import \
+       	     --type 'SampleData[PairedEndSequencesWithQuality]'  \
+	     --input-path manifest.tsv  \
+    	     --output-path ${WD}/Qobj/swift_seqs.qza \
+	     --input-format PairedEndFastqManifestPhred33
+	else
+     	    qiime tools import \
        	     --type 'SampleData[SequencesWithQuality]'  \
 	     --input-path manifest.tsv  \
-    	     --output-path Qobj/swift_single.qza \
+    	     --output-path Qobj/swift_seqs.qza \
 	     --input-format SingleEndFastqManifestPhred33V2
+     fi
 
      qiime demux summarize \
-	     --i-data Qobj/swift_single.qza \
-             --o-visualization Qobj/swift_single_qual.qzv
-
+	     --i-data Qobj/swift_seqs.qza \
+             --o-visualization Qobj/swift_seqs_qual.qzv
+     if $AS_PE; then
+     	     qiime dada2 denoise-paired \
+             --i-demultiplexed-seqs ${WD}/Qobj/swift_seqs.qza \
+             --o-table ${WD}/Qobj/swift_seqs_dada2_ft \
+             --o-representative-sequences ${WD}/Qobj/swift_seqs_dada2_rep \
+             --p-trunc-len-r 0 \
+             --p-trunc-len-f 0 \
+             --o-denoising-stats ${WD}/Qobj/swift_seqs_dada2_stats
+	else
      ## Use dada2 to denoise, call ASVs, and remove chimeras 
-     qiime dada2 denoise-single \
-             --i-demultiplexed-seqs Qobj/swift_single.qza \
-             --o-table Qobj/swift_single_dada2_ft \
-             --o-representative-sequences Qobj/swift_single_dada2_rep \
+            qiime dada2 denoise-single \
+             --i-demultiplexed-seqs Qobj/swift_seqs.qza \
+             --o-table Qobj/swift_seqs_dada2_ft \
+             --o-representative-sequences Qobj/swift_seqs_dada2_rep \
              --p-trunc-len 0 \
-             --o-denoising-stats Qobj/swift_single_dada2_stats
+             --o-denoising-stats Qobj/swift_seqs_dada2_stats
+      fi
 
 ## classify in both forward and reverse-complement orientations since the sklearn classifier does not recognize each sequence based on their strandness 
 for strand in same reverse-complement; do
   qiime feature-classifier classify-sklearn \
         --i-classifier $CLASSIFIER \
-        --i-reads Qobj/swift_single_dada2_rep.qza \
+        --i-reads Qobj/swift_seqs_dada2_rep.qza \
         --p-confidence 0.7 \
-        --o-classification Qobj/swift_single_dada2_rep_taxonomy_${strand} \
+        --o-classification Qobj/swift_seqs_dada2_rep_taxonomy_${strand} \
 	--p-read-orientation $strand 
 
   qiime tools export \
-	     --input-path Qobj/swift_single_dada2_rep_taxonomy_${strand}.qza \
+	     --input-path Qobj/swift_seqs_dada2_rep_taxonomy_${strand}.qza \
 	     --output-path . 
 		
   mv taxonomy.tsv taxonomy_${strand}.tsv
@@ -122,31 +149,31 @@ done
 ${script_dir}/mergeStrand_taxonomy.py \
 	taxonomy_same.tsv \
 	taxonomy_reverse-complement.tsv > \
-	swift_single_dada2_rep_taxonomy.tsv
+	swift_seqs_dada2_rep_taxonomy.tsv
 
 ## import the merged taxonomy back to Qobj
    qiime tools import \
         --type FeatureData[Taxonomy] \
-        --input-path swift_single_dada2_rep_taxonomy.tsv \
-        --output-path Qobj/swift_single_dada2_rep_taxonomy.qza
+        --input-path swift_seqs_dada2_rep_taxonomy.tsv \
+        --output-path Qobj/swift_seqs_dada2_rep_taxonomy.qza
  
      ## make barplot
    qiime taxa barplot \
-        --i-table Qobj/swift_single_dada2_ft.qza\
-        --i-taxonomy Qobj/swift_single_dada2_rep_taxonomy.qza \
-        --o-visualization Qobj/swift_single_dada2_barplot \
+        --i-table Qobj/swift_seqs_dada2_ft.qza\
+        --i-taxonomy Qobj/swift_seqs_dada2_rep_taxonomy.qza \
+        --o-visualization Qobj/swift_seqs_dada2_barplot \
         --m-metadata-file $samplemeta
 
      ## Collapse ASV-based feature table by taxonomy
    qiime taxa collapse \
-        --i-table Qobj/swift_single_dada2_ft.qza \
-        --i-taxonomy Qobj/swift_single_dada2_rep_taxonomy.qza \
-        --o-collapsed-table Qobj/swift_single_dada2_ft_collapsed.qza \
+        --i-table Qobj/swift_seqs_dada2_ft.qza \
+        --i-taxonomy Qobj/swift_seqs_dada2_rep_taxonomy.qza \
+        --o-collapsed-table Qobj/swift_seqs_dada2_ft_collapsed.qza \
         --p-level 7
  
      ## Export the feature table
      qiime tools export \
-             --input-path Qobj/swift_single_dada2_ft_collapsed.qza \
+             --input-path Qobj/swift_seqs_dada2_ft_collapsed.qza \
              --output-path Export
 
      ## Enter Export folder
@@ -156,4 +183,4 @@ ${script_dir}/mergeStrand_taxonomy.py \
 	biom convert \
              --to-tsv \
              --input-fp feature-table.biom \
-             --output-fp feature-table_ITS.tsv
+             --output-fp feature-table.tsv
