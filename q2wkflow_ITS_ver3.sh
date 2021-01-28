@@ -42,7 +42,7 @@ printf "sample-id\tabsolute-filepath\n" > $manifest
 samplemeta=sampleMetadata.tsv #this is a sample metadata file, now is created to contain only sample IDs.  user should prepare sample metadata file in tsv format
 printf "#SampleID\n" > $samplemeta
 
-for R1 in ${inputDir}*_R1*.fastq.gz; do #the input directory
+for R1 in ${inputDir}/*_R1*.fastq.gz; do #the input directory
     R2=${R1/_R1/_R2} #the path to the read 2 file
     echo $R1 >> $log
     echo $R2 >> $log
