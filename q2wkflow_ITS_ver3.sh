@@ -2,7 +2,7 @@
 ## Swift Biosciences ITS Qiime 2 workflow
 ## Author Benli Chai & Sukhinder Sandhu 20191009
 ## Remember to edit/set the parameters in config.txt file
-## Run as q2wkflow_ITS.sh config.txt inputDir outputDir
+## Run as q2wkflow_ITS_ver3.sh config.txt inputDir outputDir
 ## make sure output dir exists before running the pipeline
 ## This workflow treats paired-end as single reads or as paired-end reads.
 
@@ -12,7 +12,7 @@ set -x
 
 if [ $# -ne 3 ]
     then
-       echo "q2wkflow_ITS.sh config.txt inputDir workdir"
+       echo "q2wkflow_ITS_ver3.sh config_SNAP_ITS.txt inputDir workdir"
         exit
 fi
 
