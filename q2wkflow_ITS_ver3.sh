@@ -38,7 +38,7 @@ echo "Primer file used: "$PRIMERS >> $log
 ## initiate the manifest file for importing to qiime2 upon completion of primer trimming the PE merging.
 manifest=manifest.tsv
 
-#Treat reads as Paired end or single
+#Treat reads as paired ends or as singles
 if $AS_PE; then
       printf "sample-id,absolute-filepath,direction\n" > $manifest
    else
@@ -77,18 +77,19 @@ for R1 in ${inputDir}/*_R1*.fastq.gz; do #the input directory
               --minimum-length $READLEN \
               >& log.${prefix}.cutadapt.txt
 
-    #Prepare the manifest file for importing to QIIME2#
-    if $AS_PE; then
-            printf "${prefix},${trimmedR1},forward\n" >> $manifest
-            printf "${prefix},${trimmedR2},reverse\n" >> $manifest
-        else   	
-    	    #Combine the trimmed R1 and R2 into a single file to be processed as single reads
-    	    trimmed=${WD}/Qobj/${prefix}_trimmed.fastq
-            cat ${trimmedR1} ${trimmedR2} > ${trimmed}
-            printf "${prefix}\t${trimmed}\n" >> $manifest
-       fi
-    printf "${prefix}\n" >> $samplemeta
-
+    #Prepare the manifest file for importing to QIIME2, skip samples containing zero sequences #
+    if [[ -s $trimmedR1 ]]; then 
+        if $AS_PE; then
+              printf "${prefix},${trimmedR1},forward\n" >> $manifest
+              printf "${prefix},${trimmedR2},reverse\n" >> $manifest
+           else   	
+    	      #Combine the trimmed R1 and R2 into a single file to be processed as single reads
+    	      trimmed=${WD}/Qobj/${prefix}_trimmed.fastq
+              cat ${trimmedR1} ${trimmedR2} > ${trimmed}
+              printf "${prefix}\t${trimmed}\n" >> $manifest
+        fi
+        printf "${prefix}\n" >> $samplemeta
+    fi
 done
 	
 ### Import fastq files containing PE merged and not merged read as single read file to QIIME2 ####
@@ -110,6 +111,7 @@ done
      qiime demux summarize \
 	     --i-data Qobj/swift_seqs.qza \
              --o-visualization Qobj/swift_seqs_qual.qzv
+
      if $AS_PE; then
      	     qiime dada2 denoise-paired \
              --i-demultiplexed-seqs ${WD}/Qobj/swift_seqs.qza \
@@ -145,7 +147,7 @@ for strand in same reverse-complement; do
 
 done
 
-## Choose the better resolving lineage from two strand classification
+## Choose the better resolving lineage between two strands
 ${script_dir}/mergeStrand_taxonomy.py \
 	taxonomy_same.tsv \
 	taxonomy_reverse-complement.tsv > \
