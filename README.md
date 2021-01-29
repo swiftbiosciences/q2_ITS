@@ -5,7 +5,7 @@ Qiime 2 (https://qiime2.org/)
 
 Setup:
 1. Clone the package using "git clone https://github.com/swiftbiosciences/q2_ITS.git" 
-   to get following files: q2wkflow_ITS_ver3.sh,  
+   to get following files: q2wkflow_ITS_ver3.sh,
    mergeStrand_taxonomy.py, config_SNAP_ITS.txt, primer file, and reference 
    file (1) for the naive baysian classifier using UNITE ITS reference 
    version 8. 
@@ -16,7 +16,7 @@ Setup:
    merged reads (recommended for longer read lengths, e.g. 2X250, 2X300).
 
    Command to run:
-   q2wkflow_ITS_ver3.sh config_SNAP_ITS.txt inputdir workdir
+   q2wkflow_ITS_ver3.sh  config_SNAP_ITS.txt  inputdir  workdir
 
 3. Results organization: ASV feature table can be found in "Export" directory; 
    "QObj" directory contains intermediate files and tables some of which could 
